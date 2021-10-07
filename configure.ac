@@ -667,6 +667,9 @@ NEED_LIBGCRYPT_API=1
 NEED_LIBGCRYPT_VERSION=1.2.0
 AC_DEFINE_UNQUOTED(NEED_LIBGCRYPT_VERSION, "$NEED_LIBGCRYPT_VERSION",
                                      [Required version of Libgcrypt])
+NEED_LIBGCRYPT_MODULE="libgcrypt >= $NEED_LIBGCRYPT_VERSION"
+AC_SUBST(NEED_LIBGCRYPT_MODULE)
+
 case "$OS_TYPE" in
   windows)
     LIBGCRYPT_CFLAGS=""
@@ -700,7 +703,12 @@ AM_PATH_GPG_ERROR
 # check for libgnutls
 #
 
-PKG_CHECK_MODULES([LIBGNUTLS], [gnutls >= 2.9.8])
+NEED_GNUTLS_VERSION=2.9.8
+AC_DEFINE_UNQUOTED(NEED_GNUTLS_VERSION, "$NEED_GNUTLS_VERSION",
+                                     [Required version of GnuTLS])
+NEED_GNUTLS_MODULE="gnutls >= $NEED_GNUTLS_VERSION"
+AC_SUBST(NEED_GNUTLS_MODULE)
+PKG_CHECK_MODULES([LIBGNUTLS], [$NEED_GNUTLS_MODULE])
 
 
 ###-------------------------------------------------------------------------
@@ -949,7 +957,10 @@ AM_CONDITIONAL(WITH_LIBXML2_CODE, [test "$gwen_with_libxml2_code" = "yes"])
 #
 if test "$gwen_with_libxml2_code" = "yes"; then
   AC_DEFINE(GWEN_COMPILE_LIBXML2_CODE, 1, [if libxml2-code is wanted])
-  PKG_CHECK_MODULES(LIBXML,  [libxml-2.0])
+  NEED_LIBXML2_MODULE="libxml-2.0"
+  AC_SUBST(NEED_LIBXML2_MODULE)
+  AC_SUBST(gwen_with_libxml2_code)
+  PKG_CHECK_MODULES(LIBXML,  [$NEED_LIBXML2_MODULE])
 fi
 
 

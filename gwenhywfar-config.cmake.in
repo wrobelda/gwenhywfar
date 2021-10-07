@@ -68,6 +68,17 @@ if ( NOT ${FIND_GWEN_COMPONENT_QT5} EQUAL -1 )
   endif()
 endif()
 
+if (NOT @BUILD_SHARED_LIBS@)
+      find_package(PkgConfig)
+
+      pkg_check_modules(GnuTLS REQUIRED @NEED_GNUTLS_MODULE@)
+      pkg_check_modules(libgcrypt REQUIRED @NEED_LIBGCRYPT_MODULE@)
+
+      if(@gwen_with_libxml2_code@)
+        pkg_check_modules(LIBXML REQUIRED @NEED_LIBXML2_MODULE@)
+      endif()
+endif()
+
 check_required_components(GWENHYWFAR)
 
 # The target is available since gwenhywfar 4.15.3

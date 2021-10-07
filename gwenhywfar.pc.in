@@ -30,4 +30,5 @@ Description: A multi-platform helper library for other libraries
 Version: @VERSION@
 Libs: @gwenhywfar_ldflags@ @gwenhywfar_libs@
 Cflags: -I@gwenhywfar_headerdir@
+Requires.private: @NEED_GNUTLS_MODULE@, @NEED_LIBGCRYPT_MODULE@, @NEED_LIBXML2_MODULE@
 
