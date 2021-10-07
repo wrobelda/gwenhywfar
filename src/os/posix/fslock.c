@@ -45,7 +45,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <strings.h>
 
 
 #define GWEN_FSLOCK_TIMEOUT_ASK (7000.0)   /* about 7 secs */

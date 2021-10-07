@@ -41,7 +41,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <strings.h>
 
 
 GWEN_INHERIT_FUNCTIONS(GWEN_DIALOG)

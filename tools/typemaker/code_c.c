@@ -2859,7 +2859,6 @@ int write_code_file_c(ARGUMENTS *args, GWEN_XMLNODE *node)
   GWEN_SyncIo_WriteLine(sio, "#include <gwenhywfar/debug.h>");
   GWEN_SyncIo_WriteLine(sio, "#include <assert.h>");
   GWEN_SyncIo_WriteLine(sio, "#include <stdlib.h>");
-  GWEN_SyncIo_WriteLine(sio, "#include <strings.h>");
   GWEN_SyncIo_WriteLine(sio, "");
 
   /* write headers */

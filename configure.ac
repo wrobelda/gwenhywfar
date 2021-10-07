@@ -273,6 +273,16 @@ AC_CHECK_DECLS([sigprocmask], [], [], [
   #  include <signal.h>
   #endif
 ])
+AC_CHECK_DECLS([strcasecmp,strncasecmp],[],[],[#include <strings.h>])
+AC_CHECK_DECLS([_stricmp,_strnicmp],[],[],[#include <string.h>])
+if test "x$ac_cv_have_decl_strcasecmp" = xno -a \
+  "x$ac_cv_have_decl__stricmp" = xno; then
+AC_MSG_ERROR([No strcasecmp implementation found])
+fi
+if test "x$ac_cv_have_decl_strncasecmp" = xno -a \
+  "x$ac_cv_have_decl__strnicmp" = xno; then
+AC_MSG_ERROR([No strncasecmp implementation found])
+fi
 
 
 ###-------------------------------------------------------------------------
@@ -1358,6 +1368,19 @@ AC_SUBST(gwenhywfar_plugins_cfgmgr_dirs)
 AC_SUBST(gwenhywfar_plugins_cfgmgr_libs)
 AC_MSG_RESULT($plugins)
 
+AH_BOTTOM([
+#if HAVE_DECL_STRCASECMP || HAVE_DECL_STRNCASECMP
+#include <strings.h>
+#endif
+
+#if !HAVE_DECL_STRCASECMP && HAVE_DECL__STRICMP
+#define strcasecmp _stricmp
+#endif
+
+#if !HAVE_DECL_STRNCASECMP && HAVE_DECL__STRNICMP
+#define strncasecmp _strnicmp
+#endif
+])
 
 
 ###-------------------------------------------------------------------------

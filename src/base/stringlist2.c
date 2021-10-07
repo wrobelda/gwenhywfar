@@ -37,9 +37,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#ifdef HAVE_STRINGS_H
-# include <strings.h>
-#endif
 
 
 GWEN_STRINGLIST2 *GWEN_StringList2_new(void)

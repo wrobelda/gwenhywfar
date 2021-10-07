@@ -11,7 +11,6 @@
 #include <gwenhywfar/debug.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <strings.h>
 
 #include <gwenhywfar/gwentime.h>
 #include <gwenhywfar/ssl_cert_flags.h>

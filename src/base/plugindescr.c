@@ -43,9 +43,6 @@
 #endif
 #include <errno.h>
 #include <string.h>
-#ifdef HAVE_STRINGS_H
-# include <strings.h>
-#endif
 
 
 

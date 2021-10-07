@@ -11,7 +11,6 @@
 #include <gwenhywfar/debug.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <strings.h>
 
 #include <gwenhywfar/types.h>
 #include <gwenhywfar/urlfns.h>
