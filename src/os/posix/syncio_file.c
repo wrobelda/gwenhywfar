@@ -37,7 +37,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>

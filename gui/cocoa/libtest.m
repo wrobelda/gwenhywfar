@@ -15,7 +15,9 @@
 #include <gwenhywfar/debug.h>
 
 
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>

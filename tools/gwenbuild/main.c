@@ -30,7 +30,9 @@
 #include <gwenhywfar/text.h>
 #include <gwenhywfar/directory.h>
 
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 #ifdef HAVE_SIGNAL_H
 # include <signal.h>

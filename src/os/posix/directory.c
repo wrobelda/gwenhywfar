@@ -39,7 +39,9 @@
 #include <string.h>
 #include <pwd.h>
 #include <sys/types.h>
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>

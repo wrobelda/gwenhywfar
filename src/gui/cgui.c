@@ -49,7 +49,9 @@
 #ifdef HAVE_TERMIOS_H
 # include <termios.h>
 #endif
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <stdio.h>
 #include <errno.h>

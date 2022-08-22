@@ -11,7 +11,9 @@
 
 #include <QApplication>
 
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 int test1(int argc, char **argv) {
   QApplication a(argc, argv);

@@ -20,7 +20,9 @@
 #include <gwenhywfar/text.h>
 #include <gwenhywfar/syncio.h>
 
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <ctype.h>
 
 

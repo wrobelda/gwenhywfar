@@ -16,7 +16,9 @@
 #include <gwenhywfar/nogui.h>
 #include <gwenhywfar/debug.h>
 
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 
 

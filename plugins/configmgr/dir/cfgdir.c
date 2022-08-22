@@ -35,7 +35,9 @@
 #include <gwenhywfar/directory.h>
 #include <gwenhywfar/urlfns.h>
 
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>

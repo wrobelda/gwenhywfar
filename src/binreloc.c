@@ -21,7 +21,9 @@
 #ifdef ENABLE_BINRELOC
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #endif /* ENABLE_BINRELOC */
 #include <stdio.h>
 #include <stdlib.h>

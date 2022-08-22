@@ -17,7 +17,9 @@
 #include <gwenhywfar/process.h>
 #include <gwenhywfar/debug.h>
 
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <stdlib.h>
 
 

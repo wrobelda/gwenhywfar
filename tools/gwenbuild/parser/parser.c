@@ -22,7 +22,9 @@
 #include <gwenhywfar/directory.h>
 #include <gwenhywfar/text.h>
 
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
@@ -30,7 +32,9 @@
 
 #include <sys/types.h> /* for stat, chmod */
 #include <sys/stat.h>
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 
 

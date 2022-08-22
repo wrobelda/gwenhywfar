@@ -9,7 +9,9 @@
 #include <gwenhywfar/syncio_buffered.h>
 #include <gwenhywfar/buffer.h>
 
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

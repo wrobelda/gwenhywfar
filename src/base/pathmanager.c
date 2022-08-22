@@ -39,7 +39,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <errno.h>
 
 #ifdef OS_WIN32

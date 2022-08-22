@@ -30,7 +30,9 @@
 #include <gwenhywfar/text.h>
 
 #include <assert.h>
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 
 GWEN_INHERIT_FUNCTIONS(GWEN_HTTP_SESSION)
