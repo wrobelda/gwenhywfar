@@ -26,6 +26,10 @@
 # include <config.h>
 #endif
 
+#ifdef _WIN32
+# include <windows.h>
+#endif
+
 #define DISABLE_DEBUGLOG
 
 /*#define GWEN_TLS_DEBUG*/
