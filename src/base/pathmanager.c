@@ -47,6 +47,9 @@
 #ifdef OS_WIN32
 # include <windows.h>
 #endif
+#if defined(_WIN32)
+#include <winreg.h>
+#endif
 
 
 static GWEN_DB_NODE *gwen__paths=0;
