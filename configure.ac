@@ -1391,6 +1391,29 @@ AH_BOTTOM([
 #ifdef _MSC_VER
   typedef unsigned short mode_t;
 #endif
+
+#ifndef S_IRUSR
+#define S_IRUSR S_IREAD  /* read, user */
+#define S_IWUSR S_IWRITE /* write, user */
+#define S_IXUSR 0        /* execute, user */
+#define S_IRGRP 0 /* read, group */
+#define S_IWGRP 0 /* write, group */
+#define S_IXGRP 0 /* execute, group */
+#define S_IROTH 0 /* read, others */
+#define S_IWOTH 0 /* write, others */
+#define S_IXOTH 0 /* execute, others */
+#define S_IRWXU 0
+#define S_IRWXG 0
+#define S_IRWXO 0
+#endif
+
+#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
+# define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+#if !defined(S_ISDIR) && defined(S_IFMT) && defined(S_IFDIR)
+# define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#endif
+
 ])
 
 
