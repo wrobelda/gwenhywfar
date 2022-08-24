@@ -1387,6 +1387,10 @@ AH_BOTTOM([
 #elif defined(_WIN32)
   typedef long ssize_t;
 #endif
+
+#ifdef _MSC_VER
+  typedef unsigned short mode_t;
+#endif
 ])
 
 
