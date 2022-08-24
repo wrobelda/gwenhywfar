@@ -1380,6 +1380,13 @@ AH_BOTTOM([
 #if !HAVE_DECL_STRNCASECMP && HAVE_DECL__STRNICMP
 #define strncasecmp _strnicmp
 #endif
+
+#if defined(_WIN64)
+# include <stdint.h>
+  typedef int64_t ssize_t;
+#elif defined(_WIN32)
+  typedef long ssize_t;
+#endif
 ])
 
 
