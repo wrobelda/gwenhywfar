@@ -1053,13 +1053,13 @@ AC_SUBST(DOXYGEN_TAGFILES)
 #
 # Search for dlopen
 #
-LIBS=""
-AC_SEARCH_LIBS(dlopen, c dl)
-if test "$LIBS" = "-lc"; then
-    LIBS=""
-fi
+#LIBS=""
+#AC_SEARCH_LIBS(dlopen, c dl)
+#if test "$LIBS" = "-lc"; then
+#    LIBS=""
+#fi
 ld_library="$LIBS"
-LIBS=""
+#LIBS=""
 all_libraries="$all_libraries $ld_library"
 
 
