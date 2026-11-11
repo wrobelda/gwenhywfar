@@ -100,6 +100,7 @@ jobs:
       # It runs with "-k" so that the log lists every warning, and its
       # result does not stop the build and tests below.
       - name: Build with --enable-error-on-warning
+        continue-on-error: true
         run: |
           mkdir _werror
           cd _werror
@@ -280,6 +281,7 @@ jobs:
             echo "LD=link"
           } >>"$GITHUB_ENV"
       - name: Build with --enable-error-on-warning
+        continue-on-error: true
         run: |
           mkdir _werror
           cd _werror
