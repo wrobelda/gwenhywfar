@@ -512,6 +512,9 @@ void GWEN_List_Erase(GWEN_LIST *l, GWEN_LIST_ITERATOR *it)
       tle=tle->next;
     }
     assert(tle);
+    /* move the iterator's reference from the shared entry to the copy */
+    GWEN_ListEntry_free(it->current);
+    tle->usage++;
     it->current=tle;
   }
   lp=l->listPtr;
@@ -554,7 +557,7 @@ void GWEN_List_Erase(GWEN_LIST *l, GWEN_LIST_ITERATOR *it)
       else
         it->current=0;
       current->usage--;
-      it->current->linkCount--;
+      current->linkCount--;
     }
   }
 }
