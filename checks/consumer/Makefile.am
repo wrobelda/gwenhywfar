@@ -34,6 +34,10 @@ consumer_build = \
     $(srcdir)/consumer.c $(consumer_gen_sources) $(LDFLAGS) $$libs && \
   consumer-build/$$name$(EXEEXT)
 
+# CMake runs as a consumer runs it: it finds the compiler itself, takes
+# the flags from the environment, and does not join the jobserver of this
+# make. CC is unset because make passes the configured CC to commands,
+# and that can be a wrapper command such as Automake's compile script.
 installcheck-local:
 	rm -rf consumer-build
 	$(MKDIR_P) $(consumer_gen)
@@ -52,12 +56,11 @@ installcheck-local:
 	  libs=`$(PKG_CONFIG) --libs gwenhywfar`; \
 	  $(consumer_build)
 	@echo "Building against the installed files with CMake"
-	$(consumer_env); \
-	  CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" \
-	    $(CMAKE) -S $(srcdir) -B consumer-build/cmake \
-	      -DCMAKE_PREFIX_PATH="$(prefix)" \
-	      -DGWENHYWFAR_EXPECTED_VERSION="$(GWENHYWFAR_VERSION_STRING)" \
-	      -DCONSUMER_GENERATED_DIR="$(abs_builddir)/$(consumer_gen)" && \
+	$(consumer_env); unset CC MAKEFLAGS MFLAGS MAKELEVEL; \
+	  $(CMAKE) -S $(srcdir) -B consumer-build/cmake \
+	    -DCMAKE_PREFIX_PATH="$(prefix)" \
+	    -DGWENHYWFAR_EXPECTED_VERSION="$(GWENHYWFAR_VERSION_STRING)" \
+	    -DCONSUMER_GENERATED_DIR="$(abs_builddir)/$(consumer_gen)" && \
 	  $(CMAKE) --build consumer-build/cmake && \
 	  cd consumer-build/cmake && \
 	  $(CTEST) -C Debug --output-on-failure
