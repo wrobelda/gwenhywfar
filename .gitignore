@@ -100,6 +100,7 @@ qtsources
 po/gwenhywfar.pot
 test/test.db*
 test/testfile
+test/gwentest-logs
 system.h
 types.h
 version.h
