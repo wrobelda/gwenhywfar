@@ -112,7 +112,9 @@
 #endif
 
 
+#ifndef environ
 extern char **environ;
+#endif
 
 //#define TEST_GPARSER
 
