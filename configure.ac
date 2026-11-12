@@ -1458,6 +1458,7 @@ AC_CONFIG_FILES([Doxyfile
                  gwenhywfar.spec
                  gwenhywfar.iss
                  checks/Makefile
+                 checks/consumer/Makefile
                  data/Makefile
                  doc/Makefile
                  doc/dialog/Makefile
