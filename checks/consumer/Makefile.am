@@ -36,6 +36,16 @@ consumer_build = \
     $(srcdir)/consumer.c $(consumer_gen_sources) $(LDFLAGS) $$libs && \
   consumer-build/$$name$(EXEEXT)
 
+# make exports the CC that ./configure writes into the Makefile to
+# the commands it runs, and CMake would read that CC. With MSVC, that
+# CC is Automake's compile wrapper with flags, which CMake cannot use
+# as a compiler, so we must unset CC and let CMake find the compiler
+# by itself. However, under MSYS2, CMake typically finds MinGW's cc
+# before cl, so we must force CC=cl whenever ./configure detects MSVC.
+if IS_MSVC
+consumer_cmake_cc = CC=cl
+endif
+
 installcheck-local:
 	rm -rf consumer-build
 	$(MKDIR_P) $(consumer_gen)
@@ -54,12 +64,16 @@ installcheck-local:
 	  libs=`$(PKG_CONFIG) --libs gwenhywfar`; \
 	  $(consumer_build)
 	@echo "Building against the installed files with CMake"
-	$(consumer_env); \
-	  CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" \
-	    $(CMAKE) -S $(srcdir) -B consumer-build/cmake \
-	      -Dgwenhywfar_DIR="$(consumer_cmakedir)" \
-	      -DGWENHYWFAR_EXPECTED_VERSION="$(GWENHYWFAR_VERSION_STRING)" \
-	      -DCONSUMER_GENERATED_DIR="$(abs_builddir)/$(consumer_gen)" && \
+# Under "make -j distcheck" on macOS, the make that CMake runs finds
+# the -j settings of the outer make in MAKEFLAGS and tries to take
+# part in its parallel build, which fails with "read jobs pipe:
+# Resource temporarily unavailable". So we must unset MAKEFLAGS,
+# MFLAGS and MAKELEVEL for the CMake step.
+	$(consumer_env); unset CC MAKEFLAGS MFLAGS MAKELEVEL; \
+	  $(consumer_cmake_cc) $(CMAKE) -S $(srcdir) -B consumer-build/cmake \
+	    -Dgwenhywfar_DIR="$(consumer_cmakedir)" \
+	    -DGWENHYWFAR_EXPECTED_VERSION="$(GWENHYWFAR_VERSION_STRING)" \
+	    -DCONSUMER_GENERATED_DIR="$(abs_builddir)/$(consumer_gen)" && \
 	  $(CMAKE) --build consumer-build/cmake && \
 	  cd consumer-build/cmake && \
 	  $(CTEST) -C Debug --output-on-failure
