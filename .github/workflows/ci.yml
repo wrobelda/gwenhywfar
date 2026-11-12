@@ -106,7 +106,7 @@ jobs:
           ../configure $CONFIGURE_FLAGS --with-guis="${{ matrix.guis }}" \
             --enable-error-on-warning
           make -k -j"$(getconf _NPROCESSORS_ONLN)"
-      # gwentest runs after "make install", because some tests load plugins.
+      # "make installcheck" runs gwentest, which loads the installed plugins.
       - name: Configure
         if: ${{ !cancelled() && steps.bootstrap.outcome == 'success' }}
         run: >-
@@ -123,9 +123,9 @@ jobs:
         id: install
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make install
-      - name: gwentest
+      - name: make installcheck
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: .github/ci/run-gwentest.sh test/gwentest gwentest-logs
+        run: make installcheck VERBOSE=1
       - name: make distcheck
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: >-
@@ -143,9 +143,10 @@ jobs:
             _werror/config.log
             **/test-suite.log
             **/*.trs
-            gwentest-logs/
+            test/gwentest-logs/
 
-  # Builds with ASan and UBSan, then runs "make check" and gwentest.
+  # Builds with ASan and UBSan, then runs "make check" and
+  # "make installcheck".
   sanitizers:
     name: sanitizers (${{ matrix.os }}, ${{ matrix.cc }})
     runs-on: ${{ matrix.os }}
@@ -198,9 +199,9 @@ jobs:
         id: install
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make install
-      - name: gwentest
+      - name: make installcheck
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: .github/ci/run-gwentest.sh test/gwentest gwentest-logs
+        run: make installcheck VERBOSE=1
       - name: Upload logs
         if: ${{ !cancelled() }}
         continue-on-error: true
@@ -212,7 +213,7 @@ jobs:
             config.log
             **/test-suite.log
             **/*.trs
-            gwentest-logs/
+            test/gwentest-logs/
 
   # Windows builds in the UCRT64 environment of MSYS2. The MinGW job uses
   # the gcc of MSYS2. The MSVC job compiles with cl.exe from Visual Studio
@@ -283,7 +284,7 @@ jobs:
           cd _werror
           ../configure $CONFIGURE_FLAGS --enable-error-on-warning
           make -k -j"$(getconf _NPROCESSORS_ONLN)"
-      # As on Linux and macOS, gwentest runs after "make install". On
+      # As on Linux and macOS, gwentest runs in "make installcheck". On
       # Windows, Gwenhywfar looks for plugins relative to the .exe, so the
       # registry points gwentest to the installed plugins instead.
       - name: Configure
@@ -308,9 +309,9 @@ jobs:
           $plugindir = (Get-Item _inst/lib/gwenhywfar/plugins/*).FullName
           New-Item -Force -Path HKLM:\Software\Gwenhywfar\Paths |
             New-ItemProperty -Name plugindir -Value $plugindir
-      - name: gwentest
+      - name: make installcheck
         if: ${{ !cancelled() && steps.register.outcome == 'success' }}
-        run: .github/ci/run-gwentest.sh test/gwentest gwentest-logs
+        run: make installcheck VERBOSE=1
       - name: Upload logs
         if: ${{ !cancelled() }}
         continue-on-error: true
@@ -323,4 +324,4 @@ jobs:
             _werror/config.log
             **/test-suite.log
             **/*.trs
-            gwentest-logs/
+            test/gwentest-logs/
