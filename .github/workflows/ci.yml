@@ -279,20 +279,33 @@ jobs:
             echo "CXX=$PWD/compile cl -nologo"
             echo "AR=$PWD/ar-lib lib"
             echo "LD=link"
+            # lib.exe indexes its archives itself; binutils ranlib would
+            # rewrite them in a form that lib.exe misreads.
+            echo "RANLIB=:"
           } >>"$GITHUB_ENV"
+          # MSVC import libraries, headers and pkg-config files of the
+          # MinGW-built libraries, in a prefix of their own.
+          pacman -S --noconfirm --needed "${MINGW_PACKAGE_PREFIX}-tools"
+          .github/ci/msvc-deps.sh "$PWD/_deps" \
+            gnutls libgcrypt gpg-error openssl
+          # The MSYS2 login profile resets PKG_CONFIG_PATH in every step,
+          # so the configure steps pass this one to configure instead.
+          echo "MSVC_PKG_CONFIG_PATH=$PWD/_deps/lib/pkgconfig" >>"$GITHUB_ENV"
       - name: Build with --enable-error-on-warning
         continue-on-error: true
         run: |
           mkdir _werror
           cd _werror
-          ../configure $CONFIGURE_FLAGS --enable-error-on-warning
+          ../configure $CONFIGURE_FLAGS --enable-error-on-warning \
+            ${MSVC_PKG_CONFIG_PATH:+PKG_CONFIG_PATH="$MSVC_PKG_CONFIG_PATH"}
           make -k -j"$(nproc)"
       # As on Linux and macOS, gwentest runs after "make install". On
       # Windows, Gwenhywfar looks for plugins relative to the .exe, so the
       # registry points gwentest to the installed plugins instead.
       - name: Configure
         if: ${{ !cancelled() && steps.bootstrap.outcome == 'success' }}
-        run: ./configure --prefix="$PWD/_inst" $CONFIGURE_FLAGS
+        run: >-
+          ./configure --prefix="$PWD/_inst" $CONFIGURE_FLAGS ${MSVC_PKG_CONFIG_PATH:+PKG_CONFIG_PATH="$MSVC_PKG_CONFIG_PATH"}
       - name: Build
         id: build
         if: ${{ !cancelled() && steps.bootstrap.outcome == 'success' }}
@@ -315,6 +328,21 @@ jobs:
       - name: gwentest
         if: ${{ !cancelled() && steps.register.outcome == 'success' }}
         run: .github/ci/run-gwentest.sh test/gwentest gwentest-logs
+      - name: Diagnose ar-lib (test only)
+        if: ${{ matrix.cc == 'msvc' && !cancelled() }}
+        continue-on-error: true
+        run: |
+          set +e -x
+          top=$PWD
+          head -6 ar-lib | grep scriptversion || true
+          a=$PWD/src/base/.libs/base.lib
+          ls -la src/base/.libs/ | grep -iE '\.(lib|obj)$' | head -40
+          lib -nologo -list "$(cygpath -m "$a")" | cat -A | head -40
+          ./ar-lib lib t "$a" | cat -A | head -40
+          d=$(mktemp -d)
+          (cd "$d" && "$top/ar-lib" lib x "$a")
+          find "$d" -type f | head -60
+          ar t "$a" | head -40
       - name: Upload logs
         if: ${{ !cancelled() }}
         continue-on-error: true
