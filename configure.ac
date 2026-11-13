@@ -759,10 +759,25 @@ PKG_CHECK_MODULES([GPG_ERROR], [gpg-error])
 
 ###-------------------------------------------------------------------------
 #
-# check for libgnutls
+# select the TLS library
 #
+AC_MSG_CHECKING([which TLS library to use])
+AC_ARG_WITH(tls,
+  [  --with-tls=gnutls|openssl     TLS library to use (default=gnutls)],
+  [gwen_tls="$withval"],
+  [gwen_tls="gnutls"])
+case "$gwen_tls" in
+  gnutls|openssl) ;;
+  *) AC_MSG_ERROR([invalid value for --with-tls: "$gwen_tls" (use gnutls or openssl)]) ;;
+esac
+AC_MSG_RESULT([$gwen_tls])
 
-PKG_CHECK_MODULES([LIBGNUTLS], [gnutls >= 2.9.8])
+if test "$gwen_tls" = "openssl"; then
+  PKG_CHECK_MODULES([LIBTLS], [openssl >= 3.5])
+  AC_DEFINE(GWEN_TLS_OPENSSL, 1, [Defined if OpenSSL is used for TLS instead of GnuTLS])
+else
+  PKG_CHECK_MODULES([LIBTLS], [gnutls >= 2.9.8])
+fi
 
 
 ###-------------------------------------------------------------------------
@@ -1737,6 +1752,7 @@ echo "Locale Search Folder          : $gwenhywfar_locale_searchdir"
 echo "Config Search Folder          : $gwenhywfar_cfg_searchdir"
 echo "Buffer Default Hard Limit     : $gwenhywfar_buffer_hardlimit"
 echo "Symbol Visibility             : $visibility_supported"
+echo "TLS library                   : $gwen_tls"
 echo "OpenSSL Support for gct-tool  : $ssl_available"
 echo "GUI Support                   : $gwenhywfar_guis"
 echo "Use system-wide certificates  : $enable_system_certs"
