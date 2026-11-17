@@ -2259,3 +2259,8 @@ int _splitVariableNameInNameAndIndex(const char *s, char **pVariableName, int *p
 
 
 
+
+
+
+#include "text-t.c"
+
