@@ -17,6 +17,7 @@
 
 #include <gwenhywfar/debug.h>
 #include <gwenhywfar/misc.h>
+#include <gwenhywfar/syncio.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -908,13 +909,27 @@ int Typemaker2_Builder_WriteFile(TYPEMAKER2_BUILDER *tb,
 
 
 
-int Typemaker2_Builder_WriteTypedefFile(GWEN_UNUSED TYPEMAKER2_BUILDER *tb,
-                                        TYPEMAKER2_TYPE *ty,
-                                        const char *fileName)
+/* Rewriting a file empties it first, while parallel typemaker2 runs may
+ * read the .tm2 files of other types, so we must not rewrite a file
+ * whose content does not change.
+ */
+static int _writeFileIfChanged(const char *fileName, GWEN_BUFFER *buf)
 {
+  GWEN_BUFFER *oldBuf;
   FILE *f;
+  uint32_t len;
+  int unchanged;
 
-  f=fopen(fileName, "w");
+  len=GWEN_Buffer_GetUsedBytes(buf);
+  oldBuf=GWEN_Buffer_new(0, 256, 0, 1);
+  unchanged=(GWEN_SyncIo_Helper_ReadFile(fileName, oldBuf)>=0 &&
+             GWEN_Buffer_GetUsedBytes(oldBuf)==len &&
+             memcmp(GWEN_Buffer_GetStart(oldBuf), GWEN_Buffer_GetStart(buf), len)==0);
+  GWEN_Buffer_free(oldBuf);
+  if (unchanged)
+    return 0;
+
+  f=fopen(fileName, "wb");
   if (f==NULL) {
     DBG_ERROR(GWEN_LOGDOMAIN, "fopen(%s): %s (%d)",
               fileName,
@@ -922,26 +937,54 @@ int Typemaker2_Builder_WriteTypedefFile(GWEN_UNUSED TYPEMAKER2_BUILDER *tb,
               errno);
     return GWEN_ERROR_IO;
   }
-
-  fprintf(f, "<?xml?>\n");
-  fprintf(f, "\n");
-  fprintf(f, "<tm2>\n");
-
-  fprintf(f, "  <typedef id=\"%s\" type=\"pointer\" lang=\"c\" extends=\"struct_base\">\n",
-          Typemaker2_Type_GetName(ty));
-
-  fprintf(f, "    <identifier>%s</identifier>\n", Typemaker2_Type_GetName(ty));
-  fprintf(f, "    <prefix>%s</prefix>\n", Typemaker2_Type_GetPrefix(ty));
-
-  fprintf(f, "  </typedef>\n");
-  fprintf(f, "</tm2>\n");
-
+  if (fwrite(GWEN_Buffer_GetStart(buf), 1, len, f)!=len) {
+    DBG_ERROR(GWEN_LOGDOMAIN, "fwrite(%s): %s (%d)",
+              fileName,
+              strerror(errno),
+              errno);
+    fclose(f);
+    return GWEN_ERROR_IO;
+  }
   if (fclose(f)) {
     DBG_ERROR(GWEN_LOGDOMAIN, "fclose(%s): %s (%d)",
               fileName,
               strerror(errno),
               errno);
     return GWEN_ERROR_IO;
+  }
+
+  return 0;
+}
+
+
+
+int Typemaker2_Builder_WriteTypedefFile(GWEN_UNUSED TYPEMAKER2_BUILDER *tb,
+                                        TYPEMAKER2_TYPE *ty,
+                                        const char *fileName)
+{
+  GWEN_BUFFER *buf;
+  int rv;
+
+  buf=GWEN_Buffer_new(0, 256, 0, 1);
+
+  GWEN_Buffer_AppendString(buf, "<?xml?>\n");
+  GWEN_Buffer_AppendString(buf, "\n");
+  GWEN_Buffer_AppendString(buf, "<tm2>\n");
+
+  GWEN_Buffer_AppendArgs(buf, "  <typedef id=\"%s\" type=\"pointer\" lang=\"c\" extends=\"struct_base\">\n",
+                         Typemaker2_Type_GetName(ty));
+
+  GWEN_Buffer_AppendArgs(buf, "    <identifier>%s</identifier>\n", Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <prefix>%s</prefix>\n", Typemaker2_Type_GetPrefix(ty));
+
+  GWEN_Buffer_AppendString(buf, "  </typedef>\n");
+  GWEN_Buffer_AppendString(buf, "</tm2>\n");
+
+  rv=_writeFileIfChanged(fileName, buf);
+  GWEN_Buffer_free(buf);
+  if (rv<0) {
+    DBG_INFO(GWEN_LOGDOMAIN, "here (%d)", rv);
+    return rv;
   }
 
   return 0;
@@ -953,38 +996,31 @@ int Typemaker2_Builder_WriteTypedefFile_List1(GWEN_UNUSED TYPEMAKER2_BUILDER *tb
                                               TYPEMAKER2_TYPE *ty,
                                               const char *fileName)
 {
-  FILE *f;
+  GWEN_BUFFER *buf;
+  int rv;
 
-  f=fopen(fileName, "w");
-  if (f==NULL) {
-    DBG_ERROR(GWEN_LOGDOMAIN, "fopen(%s): %s (%d)",
-              fileName,
-              strerror(errno),
-              errno);
-    return GWEN_ERROR_IO;
-  }
+  buf=GWEN_Buffer_new(0, 256, 0, 1);
 
-  fprintf(f, "<?xml?>\n");
-  fprintf(f, "\n");
-  fprintf(f, "<tm2>\n");
+  GWEN_Buffer_AppendString(buf, "<?xml?>\n");
+  GWEN_Buffer_AppendString(buf, "\n");
+  GWEN_Buffer_AppendString(buf, "<tm2>\n");
 
-  fprintf(f, "  <typedef id=\"%s_LIST\" type=\"pointer\" lang=\"c\" extends=\"list1_base\" "
-          "basetype=\"%s\">\n",
-          Typemaker2_Type_GetName(ty),
-          Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "  <typedef id=\"%s_LIST\" type=\"pointer\" lang=\"c\" extends=\"list1_base\" "
+                         "basetype=\"%s\">\n",
+                         Typemaker2_Type_GetName(ty),
+                         Typemaker2_Type_GetName(ty));
 
-  fprintf(f, "    <identifier>%s_LIST</identifier>\n", Typemaker2_Type_GetName(ty));
-  fprintf(f, "    <prefix>%s_List</prefix>\n", Typemaker2_Type_GetPrefix(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <identifier>%s_LIST</identifier>\n", Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <prefix>%s_List</prefix>\n", Typemaker2_Type_GetPrefix(ty));
 
-  fprintf(f, "  </typedef>\n");
-  fprintf(f, "</tm2>\n");
+  GWEN_Buffer_AppendString(buf, "  </typedef>\n");
+  GWEN_Buffer_AppendString(buf, "</tm2>\n");
 
-  if (fclose(f)) {
-    DBG_ERROR(GWEN_LOGDOMAIN, "fclose(%s): %s (%d)",
-              fileName,
-              strerror(errno),
-              errno);
-    return GWEN_ERROR_IO;
+  rv=_writeFileIfChanged(fileName, buf);
+  GWEN_Buffer_free(buf);
+  if (rv<0) {
+    DBG_INFO(GWEN_LOGDOMAIN, "here (%d)", rv);
+    return rv;
   }
 
   return 0;
@@ -996,38 +1032,31 @@ int Typemaker2_Builder_WriteTypedefFile_List2(GWEN_UNUSED TYPEMAKER2_BUILDER *tb
                                               TYPEMAKER2_TYPE *ty,
                                               const char *fileName)
 {
-  FILE *f;
+  GWEN_BUFFER *buf;
+  int rv;
 
-  f=fopen(fileName, "w");
-  if (f==NULL) {
-    DBG_ERROR(GWEN_LOGDOMAIN, "fopen(%s): %s (%d)",
-              fileName,
-              strerror(errno),
-              errno);
-    return GWEN_ERROR_IO;
-  }
+  buf=GWEN_Buffer_new(0, 256, 0, 1);
 
-  fprintf(f, "<?xml?>\n");
-  fprintf(f, "\n");
-  fprintf(f, "<tm2>\n");
+  GWEN_Buffer_AppendString(buf, "<?xml?>\n");
+  GWEN_Buffer_AppendString(buf, "\n");
+  GWEN_Buffer_AppendString(buf, "<tm2>\n");
 
-  fprintf(f, "  <typedef id=\"%s_LIST2\" type=\"pointer\" lang=\"c\" extends=\"list2_base\" "
-          "basetype=\"%s\">\n",
-          Typemaker2_Type_GetName(ty),
-          Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "  <typedef id=\"%s_LIST2\" type=\"pointer\" lang=\"c\" extends=\"list2_base\" "
+                         "basetype=\"%s\">\n",
+                         Typemaker2_Type_GetName(ty),
+                         Typemaker2_Type_GetName(ty));
 
-  fprintf(f, "    <identifier>%s_LIST2</identifier>\n", Typemaker2_Type_GetName(ty));
-  fprintf(f, "    <prefix>%s_List2</prefix>\n", Typemaker2_Type_GetPrefix(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <identifier>%s_LIST2</identifier>\n", Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <prefix>%s_List2</prefix>\n", Typemaker2_Type_GetPrefix(ty));
 
-  fprintf(f, "  </typedef>\n");
-  fprintf(f, "</tm2>\n");
+  GWEN_Buffer_AppendString(buf, "  </typedef>\n");
+  GWEN_Buffer_AppendString(buf, "</tm2>\n");
 
-  if (fclose(f)) {
-    DBG_ERROR(GWEN_LOGDOMAIN, "fclose(%s): %s (%d)",
-              fileName,
-              strerror(errno),
-              errno);
-    return GWEN_ERROR_IO;
+  rv=_writeFileIfChanged(fileName, buf);
+  GWEN_Buffer_free(buf);
+  if (rv<0) {
+    DBG_INFO(GWEN_LOGDOMAIN, "here (%d)", rv);
+    return rv;
   }
 
   return 0;
@@ -1039,38 +1068,31 @@ int Typemaker2_Builder_WriteTypedefFile_Tree(GWEN_UNUSED TYPEMAKER2_BUILDER *tb,
                                              TYPEMAKER2_TYPE *ty,
                                              const char *fileName)
 {
-  FILE *f;
+  GWEN_BUFFER *buf;
+  int rv;
 
-  f=fopen(fileName, "w");
-  if (f==NULL) {
-    DBG_ERROR(GWEN_LOGDOMAIN, "fopen(%s): %s (%d)",
-              fileName,
-              strerror(errno),
-              errno);
-    return GWEN_ERROR_IO;
-  }
+  buf=GWEN_Buffer_new(0, 256, 0, 1);
 
-  fprintf(f, "<?xml?>\n");
-  fprintf(f, "\n");
-  fprintf(f, "<tm2>\n");
+  GWEN_Buffer_AppendString(buf, "<?xml?>\n");
+  GWEN_Buffer_AppendString(buf, "\n");
+  GWEN_Buffer_AppendString(buf, "<tm2>\n");
 
-  fprintf(f, "  <typedef id=\"%s_TREE\" type=\"pointer\" lang=\"c\" extends=\"tree_base\" "
-          "basetype=\"%s\">\n",
-          Typemaker2_Type_GetName(ty),
-          Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "  <typedef id=\"%s_TREE\" type=\"pointer\" lang=\"c\" extends=\"tree_base\" "
+                         "basetype=\"%s\">\n",
+                         Typemaker2_Type_GetName(ty),
+                         Typemaker2_Type_GetName(ty));
 
-  fprintf(f, "    <identifier>%s_TREE</identifier>\n", Typemaker2_Type_GetName(ty));
-  fprintf(f, "    <prefix>%s_Tree</prefix>\n", Typemaker2_Type_GetPrefix(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <identifier>%s_TREE</identifier>\n", Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <prefix>%s_Tree</prefix>\n", Typemaker2_Type_GetPrefix(ty));
 
-  fprintf(f, "  </typedef>\n");
-  fprintf(f, "</tm2>\n");
+  GWEN_Buffer_AppendString(buf, "  </typedef>\n");
+  GWEN_Buffer_AppendString(buf, "</tm2>\n");
 
-  if (fclose(f)) {
-    DBG_ERROR(GWEN_LOGDOMAIN, "fclose(%s): %s (%d)",
-              fileName,
-              strerror(errno),
-              errno);
-    return GWEN_ERROR_IO;
+  rv=_writeFileIfChanged(fileName, buf);
+  GWEN_Buffer_free(buf);
+  if (rv<0) {
+    DBG_INFO(GWEN_LOGDOMAIN, "here (%d)", rv);
+    return rv;
   }
 
   return 0;
@@ -1082,38 +1104,31 @@ int Typemaker2_Builder_WriteTypedefFile_Tree2(GWEN_UNUSED TYPEMAKER2_BUILDER *tb
                                               TYPEMAKER2_TYPE *ty,
                                               const char *fileName)
 {
-  FILE *f;
+  GWEN_BUFFER *buf;
+  int rv;
 
-  f=fopen(fileName, "w");
-  if (f==NULL) {
-    DBG_ERROR(GWEN_LOGDOMAIN, "fopen(%s): %s (%d)",
-              fileName,
-              strerror(errno),
-              errno);
-    return GWEN_ERROR_IO;
-  }
+  buf=GWEN_Buffer_new(0, 256, 0, 1);
 
-  fprintf(f, "<?xml?>\n");
-  fprintf(f, "\n");
-  fprintf(f, "<tm2>\n");
+  GWEN_Buffer_AppendString(buf, "<?xml?>\n");
+  GWEN_Buffer_AppendString(buf, "\n");
+  GWEN_Buffer_AppendString(buf, "<tm2>\n");
 
-  fprintf(f, "  <typedef id=\"%s_TREE2\" type=\"pointer\" lang=\"c\" extends=\"tree_base\" "
-          "basetype=\"%s\">\n",
-          Typemaker2_Type_GetName(ty),
-          Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "  <typedef id=\"%s_TREE2\" type=\"pointer\" lang=\"c\" extends=\"tree_base\" "
+                         "basetype=\"%s\">\n",
+                         Typemaker2_Type_GetName(ty),
+                         Typemaker2_Type_GetName(ty));
 
-  fprintf(f, "    <identifier>%s_TREE2</identifier>\n", Typemaker2_Type_GetName(ty));
-  fprintf(f, "    <prefix>%s_Tree2</prefix>\n", Typemaker2_Type_GetPrefix(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <identifier>%s_TREE2</identifier>\n", Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <prefix>%s_Tree2</prefix>\n", Typemaker2_Type_GetPrefix(ty));
 
-  fprintf(f, "  </typedef>\n");
-  fprintf(f, "</tm2>\n");
+  GWEN_Buffer_AppendString(buf, "  </typedef>\n");
+  GWEN_Buffer_AppendString(buf, "</tm2>\n");
 
-  if (fclose(f)) {
-    DBG_ERROR(GWEN_LOGDOMAIN, "fclose(%s): %s (%d)",
-              fileName,
-              strerror(errno),
-              errno);
-    return GWEN_ERROR_IO;
+  rv=_writeFileIfChanged(fileName, buf);
+  GWEN_Buffer_free(buf);
+  if (rv<0) {
+    DBG_INFO(GWEN_LOGDOMAIN, "here (%d)", rv);
+    return rv;
   }
 
   return 0;
@@ -1125,38 +1140,31 @@ int Typemaker2_Builder_WriteTypedefFile_IdMap(GWEN_UNUSED TYPEMAKER2_BUILDER *tb
                                               TYPEMAKER2_TYPE *ty,
                                               const char *fileName)
 {
-  FILE *f;
+  GWEN_BUFFER *buf;
+  int rv;
 
-  f=fopen(fileName, "w");
-  if (f==NULL) {
-    DBG_ERROR(GWEN_LOGDOMAIN, "fopen(%s): %s (%d)",
-              fileName,
-              strerror(errno),
-              errno);
-    return GWEN_ERROR_IO;
-  }
+  buf=GWEN_Buffer_new(0, 256, 0, 1);
 
-  fprintf(f, "<?xml?>\n");
-  fprintf(f, "\n");
-  fprintf(f, "<tm2>\n");
+  GWEN_Buffer_AppendString(buf, "<?xml?>\n");
+  GWEN_Buffer_AppendString(buf, "\n");
+  GWEN_Buffer_AppendString(buf, "<tm2>\n");
 
-  fprintf(f, "  <typedef id=\"%s_IDMAP\" type=\"pointer\" lang=\"c\" extends=\"idmap_base\" "
-          "basetype=\"%s\">\n",
-          Typemaker2_Type_GetName(ty),
-          Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "  <typedef id=\"%s_IDMAP\" type=\"pointer\" lang=\"c\" extends=\"idmap_base\" "
+                         "basetype=\"%s\">\n",
+                         Typemaker2_Type_GetName(ty),
+                         Typemaker2_Type_GetName(ty));
 
-  fprintf(f, "    <identifier>%s_IDMAP</identifier>\n", Typemaker2_Type_GetName(ty));
-  fprintf(f, "    <prefix>%s_IdMap</prefix>\n", Typemaker2_Type_GetPrefix(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <identifier>%s_IDMAP</identifier>\n", Typemaker2_Type_GetName(ty));
+  GWEN_Buffer_AppendArgs(buf, "    <prefix>%s_IdMap</prefix>\n", Typemaker2_Type_GetPrefix(ty));
 
-  fprintf(f, "  </typedef>\n");
-  fprintf(f, "</tm2>\n");
+  GWEN_Buffer_AppendString(buf, "  </typedef>\n");
+  GWEN_Buffer_AppendString(buf, "</tm2>\n");
 
-  if (fclose(f)) {
-    DBG_ERROR(GWEN_LOGDOMAIN, "fclose(%s): %s (%d)",
-              fileName,
-              strerror(errno),
-              errno);
-    return GWEN_ERROR_IO;
+  rv=_writeFileIfChanged(fileName, buf);
+  GWEN_Buffer_free(buf);
+  if (rv<0) {
+    DBG_INFO(GWEN_LOGDOMAIN, "here (%d)", rv);
+    return rv;
   }
 
   return 0;
